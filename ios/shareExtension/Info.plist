@@ -6,19 +6,26 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
+			<!-- Predicate rule instead of the class-based dictionary: the
+			     dictionary's File/Image/Movie/Text/WebURL classes miss
+			     documents delivered as in-memory data (e.g. a PDF viewed in
+			     Safari), so Cylonix never appeared in the share sheet for
+			     them. Accept any item set whose attachments all provide a
+			     data, URL, or text representation. -->
 			<key>NSExtensionActivationRule</key>
-			<dict>
-				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
-				<integer>100</integer>
-				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
-				<integer>100</integer>
-				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
-				<integer>100</integer>
-				<key>NSExtensionActivationSupportsText</key>
-				<true/>
-				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
-				<integer>1</integer>
-			</dict>
+			<string>SUBQUERY (
+    extensionItems,
+    $extensionItem,
+    SUBQUERY (
+        $extensionItem.attachments,
+        $attachment,
+        ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.data"
+        OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url"
+        OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.text"
+    ).@count == $extensionItem.attachments.@count
+    AND $extensionItem.attachments.@count &gt;= 1
+    AND $extensionItem.attachments.@count &lt;= 100
+).@count &gt;= 1</string>
 			<key>PHSupportedMediaTypes</key>
 			<array>
 				<string>Video</string>

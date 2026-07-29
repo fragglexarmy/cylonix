@@ -68,14 +68,17 @@ extension ShareViewController {
         sharedFiles = []
 
         // Order matters: fileURL must be checked before url (fileURL is a
-        // subtype of url). Likewise plainText is checked as the canonical
-        // text identifier — most senders register either plainText or one of
-        // its subtypes.
+        // subtype of url). pdf also comes before url — Safari shares a viewed
+        // PDF as document data alongside the page URL, and the document is
+        // what the user means to share, not a .webloc. Likewise plainText is
+        // checked as the canonical text identifier — most senders register
+        // either plainText or one of its subtypes.
         let types: [UTType] = [
             UTType.video,
             UTType.audio,
             UTType.image,
             UTType.fileURL,
+            UTType.pdf,
             UTType.url,
             UTType.plainText,
         ]
@@ -93,6 +96,20 @@ extension ShareViewController {
                 }
             }
             if supported { continue }
+
+            // Fallback: accept any attachment whose concrete type can deliver
+            // a data representation (documents other than the types above —
+            // Keynote decks, vcards, archives — register only their own UTI).
+            // Load by that concrete identifier so the saved file keeps the
+            // right extension.
+            if let identifier = attachment.registeredTypeIdentifiers.first(where: {
+                UTType($0)?.conforms(to: .data) == true
+            }) {
+                debugLog("Falling back to data-conforming type \(identifier)")
+                handleSharedFileItem(attachment, identifier)
+                continue
+            }
+
             unSupportedTypes.formUnion(attachment.registeredTypeIdentifiers)
 
             debugLog("Attachment type not supported: \(attachment.registeredTypeIdentifiers)")
