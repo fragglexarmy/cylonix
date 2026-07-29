@@ -2387,9 +2387,13 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       for (final attachment in message.attachments)
                         ContextMenuButtonItem(
-                          label: filesSaved.contains(attachment.name)
-                              ? 'Save Again'
-                              : 'Save',
+                          label: _attachmentActionLabel(
+                            filesSaved.contains(attachment.name)
+                                ? 'Save Again'
+                                : 'Save',
+                            attachment,
+                            withName: message.attachments.length > 1,
+                          ),
                           onPressed: () {
                             ContextMenuController.removeAny();
                             onSaveAttachment(attachment);
@@ -2446,6 +2450,19 @@ class _MessageBubble extends StatelessWidget {
                 attachment: attachment,
                 isSaved: filesSaved.contains(attachment.name),
                 onTap: () => onOpenAttachment(attachment),
+                onLongPress: _supportsLongPressAction(context)
+                    ? () => _showMessageActions(
+                          context,
+                          attachment: attachment,
+                        )
+                    : null,
+                onSecondaryTapDown: _supportsSecondaryClickAction(context)
+                    ? (globalPosition) => _showMessageActions(
+                          context,
+                          globalPosition: globalPosition,
+                          attachment: attachment,
+                        )
+                    : null,
                 resolvePath: () => resolveAttachmentPath(attachment),
                 foregroundColor: foregroundColor,
                 secondaryColor: secondaryForegroundColor,
@@ -2738,8 +2755,12 @@ class _MessageBubble extends StatelessWidget {
   Future<void> _showMessageActions(
     BuildContext context, {
     Offset? globalPosition,
+    PeerMessagingAttachment? attachment,
   }) async {
-    final savableAttachments = message.attachments;
+    // Invoked from a specific attachment (long-press / right-click on it):
+    // scope Save/Share to that attachment instead of listing every one.
+    final savableAttachments =
+        attachment != null ? [attachment] : message.attachments;
     final selected = _supportsSecondaryClickAction(context) &&
             globalPosition != null
         ? await showMenu<String>(
@@ -2770,9 +2791,13 @@ class _MessageBubble extends StatelessWidget {
                 PopupMenuItem<String>(
                   value: 'save:${attachment.id}',
                   child: Text(
-                    filesSaved.contains(attachment.name)
-                        ? 'Save Again'
-                        : 'Save',
+                    _attachmentActionLabel(
+                      filesSaved.contains(attachment.name)
+                          ? 'Save Again'
+                          : 'Save',
+                      attachment,
+                      withName: savableAttachments.length > 1,
+                    ),
                   ),
                 ),
               if (savableAttachments.isNotEmpty) const PopupMenuDivider(),
@@ -2835,6 +2860,13 @@ class _MessageBubble extends StatelessWidget {
                             ? 'Save Again'
                             : 'Save',
                       ),
+                      subtitle: savableAttachments.length > 1
+                          ? Text(
+                              _attachmentDisplayName(attachment),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          : null,
                       onTap: () =>
                           Navigator.pop(context, 'save:${attachment.id}'),
                     ),
@@ -2842,11 +2874,14 @@ class _MessageBubble extends StatelessWidget {
                     for (final attachment in savableAttachments)
                       ListTile(
                         leading: const Icon(Icons.share_outlined),
-                        title: Text(
-                          savableAttachments.length == 1
-                              ? 'Share File'
-                              : 'Share ${attachment.name}',
-                        ),
+                        title: const Text('Share File'),
+                        subtitle: savableAttachments.length > 1
+                            ? Text(
+                                _attachmentDisplayName(attachment),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
                         onTap: () =>
                             Navigator.pop(context, 'share:${attachment.id}'),
                       ),
@@ -2906,10 +2941,48 @@ class _MessageBubble extends StatelessWidget {
 
 }
 
+/// Attachment names carry a `<uuid>_` storage prefix from the transfer
+/// queue; strip it so menu labels read as the original file name.
+String _attachmentDisplayName(PeerMessagingAttachment attachment) {
+  final name = attachment.name.replaceFirst(
+    RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}_',
+    ),
+    '',
+  );
+  return name.isEmpty ? attachment.name : name;
+}
+
+/// Compact menu label such as `Save · photo.jpg`. The name part is only
+/// added when the menu lists several attachments (`withName`) and is
+/// middle-truncated keeping the extension so single-line menus stay short.
+String _attachmentActionLabel(
+  String action,
+  PeerMessagingAttachment attachment, {
+  required bool withName,
+}) {
+  if (!withName) {
+    return action;
+  }
+  var name = _attachmentDisplayName(attachment);
+  const maxLength = 28;
+  if (name.length > maxLength) {
+    final extension = p.extension(name);
+    final head = maxLength - extension.length - 1;
+    name = head > 0
+        ? '${name.substring(0, head)}…$extension'
+        : '${name.substring(0, maxLength - 1)}…';
+  }
+  return '$action · $name';
+}
+
 class _AttachmentLine extends StatelessWidget {
   final PeerMessagingAttachment attachment;
   final bool isSaved;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final void Function(Offset globalPosition)? onSecondaryTapDown;
   final Future<String?> Function() resolvePath;
   final Color foregroundColor;
   final Color secondaryColor;
@@ -2919,6 +2992,8 @@ class _AttachmentLine extends StatelessWidget {
     required this.attachment,
     required this.isSaved,
     required this.onTap,
+    this.onLongPress,
+    this.onSecondaryTapDown,
     required this.resolvePath,
     required this.foregroundColor,
     required this.secondaryColor,
@@ -2928,60 +3003,77 @@ class _AttachmentLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (_hasThumbnail) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: _AttachmentThumbnail(
-            attachment: attachment,
-            resolvePath: resolvePath,
-            secondaryColor: secondaryColor,
+      return _wrapSecondaryTap(
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: _AttachmentThumbnail(
+              attachment: attachment,
+              resolvePath: resolvePath,
+              secondaryColor: secondaryColor,
+            ),
           ),
         ),
       );
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Icon(
-                _leadingIcon,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      attachment.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: foregroundColor),
-                    ),
-                    Text(
-                      isSaved
-                          ? '${formatBytes(attachment.size)} · Saved'
-                          : formatBytes(attachment.size),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: secondaryColor,
-                            height: 1.15,
-                          ),
-                    ),
-                  ],
+    return _wrapSecondaryTap(
+      Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  _leadingIcon,
+                  size: 18,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        attachment.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: foregroundColor),
+                      ),
+                      Text(
+                        isSaved
+                            ? '${formatBytes(attachment.size)} · Saved'
+                            : formatBytes(attachment.size),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: secondaryColor,
+                              height: 1.15,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _wrapSecondaryTap(Widget child) {
+    final handler = onSecondaryTapDown;
+    if (handler == null) {
+      return child;
+    }
+    return GestureDetector(
+      onSecondaryTapDown: (details) => handler(details.globalPosition),
+      child: child,
     );
   }
 
