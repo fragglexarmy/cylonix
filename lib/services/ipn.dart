@@ -526,6 +526,25 @@ class IpnService {
     }
   }
 
+  /// Reports the app's version/build (e.g. "cylonix-app/1.2.3+45") to the
+  /// daemon, which records it in Hostinfo.App and re-sends Hostinfo to the
+  /// control server so machine details show what app build this node runs.
+  Future<void> setAppInfo(String app) async {
+    if (_useHttpLocalApi) {
+      await _sendCommandOverHttp(
+        Uri.parse(
+          '$_localBaseURL/set-app-info?app=${Uri.encodeQueryComponent(app)}',
+        ),
+        'POST',
+      );
+      return;
+    }
+    final result = await _sendCommand("set_app_info", app);
+    if (result != 'Success') {
+      throw Exception(result);
+    }
+  }
+
   Future<String> getDebugStateTraces() async {
     if (_useHttpLocalApi) {
       return await _sendCommandOverHttp(

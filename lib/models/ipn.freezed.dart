@@ -8264,6 +8264,8 @@ mixin _$Hostinfo {
   String? get distroCodeName => throw _privateConstructorUsedError;
   @JsonKey(name: 'Desktop')
   bool? get desktop => throw _privateConstructorUsedError;
+  @JsonKey(name: 'App')
+  String? get app => throw _privateConstructorUsedError;
   @JsonKey(name: 'Package')
   String? get package => throw _privateConstructorUsedError;
   @JsonKey(name: 'DeviceModel')
@@ -8311,6 +8313,7 @@ abstract class $HostinfoCopyWith<$Res> {
       @JsonKey(name: 'DistroVersion') String? distroVersion,
       @JsonKey(name: 'DistroCodeName') String? distroCodeName,
       @JsonKey(name: 'Desktop') bool? desktop,
+      @JsonKey(name: 'App') String? app,
       @JsonKey(name: 'Package') String? package,
       @JsonKey(name: 'DeviceModel') String? deviceModel,
       @JsonKey(name: 'ShareeNode') bool? shareeNode,
@@ -8350,6 +8353,7 @@ class _$HostinfoCopyWithImpl<$Res, $Val extends Hostinfo>
     Object? distroVersion = freezed,
     Object? distroCodeName = freezed,
     Object? desktop = freezed,
+    Object? app = freezed,
     Object? package = freezed,
     Object? deviceModel = freezed,
     Object? shareeNode = freezed,
@@ -8402,6 +8406,10 @@ class _$HostinfoCopyWithImpl<$Res, $Val extends Hostinfo>
           ? _value.desktop
           : desktop // ignore: cast_nullable_to_non_nullable
               as bool?,
+      app: freezed == app
+          ? _value.app
+          : app // ignore: cast_nullable_to_non_nullable
+              as String?,
       package: freezed == package
           ? _value.package
           : package // ignore: cast_nullable_to_non_nullable
@@ -8479,6 +8487,7 @@ abstract class _$$HostinfoImplCopyWith<$Res>
       @JsonKey(name: 'DistroVersion') String? distroVersion,
       @JsonKey(name: 'DistroCodeName') String? distroCodeName,
       @JsonKey(name: 'Desktop') bool? desktop,
+      @JsonKey(name: 'App') String? app,
       @JsonKey(name: 'Package') String? package,
       @JsonKey(name: 'DeviceModel') String? deviceModel,
       @JsonKey(name: 'ShareeNode') bool? shareeNode,
@@ -8517,6 +8526,7 @@ class __$$HostinfoImplCopyWithImpl<$Res>
     Object? distroVersion = freezed,
     Object? distroCodeName = freezed,
     Object? desktop = freezed,
+    Object? app = freezed,
     Object? package = freezed,
     Object? deviceModel = freezed,
     Object? shareeNode = freezed,
@@ -8569,6 +8579,10 @@ class __$$HostinfoImplCopyWithImpl<$Res>
           ? _value.desktop
           : desktop // ignore: cast_nullable_to_non_nullable
               as bool?,
+      app: freezed == app
+          ? _value.app
+          : app // ignore: cast_nullable_to_non_nullable
+              as String?,
       package: freezed == package
           ? _value.package
           : package // ignore: cast_nullable_to_non_nullable
@@ -8627,6 +8641,7 @@ class _$HostinfoImpl implements _Hostinfo {
       @JsonKey(name: 'DistroVersion') this.distroVersion,
       @JsonKey(name: 'DistroCodeName') this.distroCodeName,
       @JsonKey(name: 'Desktop') this.desktop,
+      @JsonKey(name: 'App') this.app,
       @JsonKey(name: 'Package') this.package,
       @JsonKey(name: 'DeviceModel') this.deviceModel,
       @JsonKey(name: 'ShareeNode') this.shareeNode,
@@ -8673,6 +8688,9 @@ class _$HostinfoImpl implements _Hostinfo {
   @override
   @JsonKey(name: 'Desktop')
   final bool? desktop;
+  @override
+  @JsonKey(name: 'App')
+  final String? app;
   @override
   @JsonKey(name: 'Package')
   final String? package;
@@ -8722,7 +8740,7 @@ class _$HostinfoImpl implements _Hostinfo {
 
   @override
   String toString() {
-    return 'Hostinfo(ipnVersion: $ipnVersion, frontendLogID: $frontendLogID, backendLogID: $backendLogID, os: $os, osVersion: $osVersion, env: $env, distro: $distro, distroVersion: $distroVersion, distroCodeName: $distroCodeName, desktop: $desktop, package: $package, deviceModel: $deviceModel, shareeNode: $shareeNode, hostname: $hostname, shieldsUp: $shieldsUp, noLogsNoSupport: $noLogsNoSupport, machine: $machine, routableIPs: $routableIPs, services: $services, location: $location)';
+    return 'Hostinfo(ipnVersion: $ipnVersion, frontendLogID: $frontendLogID, backendLogID: $backendLogID, os: $os, osVersion: $osVersion, env: $env, distro: $distro, distroVersion: $distroVersion, distroCodeName: $distroCodeName, desktop: $desktop, app: $app, package: $package, deviceModel: $deviceModel, shareeNode: $shareeNode, hostname: $hostname, shieldsUp: $shieldsUp, noLogsNoSupport: $noLogsNoSupport, machine: $machine, routableIPs: $routableIPs, services: $services, location: $location)';
   }
 
   @override
@@ -8746,6 +8764,7 @@ class _$HostinfoImpl implements _Hostinfo {
             (identical(other.distroCodeName, distroCodeName) ||
                 other.distroCodeName == distroCodeName) &&
             (identical(other.desktop, desktop) || other.desktop == desktop) &&
+            (identical(other.app, app) || other.app == app) &&
             (identical(other.package, package) || other.package == package) &&
             (identical(other.deviceModel, deviceModel) ||
                 other.deviceModel == deviceModel) &&
@@ -8779,6 +8798,7 @@ class _$HostinfoImpl implements _Hostinfo {
         distroVersion,
         distroCodeName,
         desktop,
+        app,
         package,
         deviceModel,
         shareeNode,
@@ -8819,6 +8839,7 @@ abstract class _Hostinfo implements Hostinfo {
       @JsonKey(name: 'DistroVersion') final String? distroVersion,
       @JsonKey(name: 'DistroCodeName') final String? distroCodeName,
       @JsonKey(name: 'Desktop') final bool? desktop,
+      @JsonKey(name: 'App') final String? app,
       @JsonKey(name: 'Package') final String? package,
       @JsonKey(name: 'DeviceModel') final String? deviceModel,
       @JsonKey(name: 'ShareeNode') final bool? shareeNode,
@@ -8863,6 +8884,9 @@ abstract class _Hostinfo implements Hostinfo {
   @override
   @JsonKey(name: 'Desktop')
   bool? get desktop;
+  @override
+  @JsonKey(name: 'App')
+  String? get app;
   @override
   @JsonKey(name: 'Package')
   String? get package;

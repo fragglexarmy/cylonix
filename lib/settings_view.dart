@@ -14,6 +14,7 @@ import 'providers/ipn.dart';
 import 'providers/settings.dart';
 import 'services/android_taildrop_notifications.dart';
 import 'services/ipn.dart';
+import 'utils/distribution.dart';
 import 'utils/logger.dart';
 import 'utils/utils.dart';
 import 'viewmodels/settings.dart';
@@ -741,7 +742,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     future: PackageInfo.fromPlatform(),
                     builder: (context, snapshot) {
                       final version = snapshot.data?.version ?? '';
-                      return Text('Version $version');
+                      final variant = appDistributionLabel(snapshot.data);
+                      return Text(
+                        variant == null
+                            ? 'Version $version'
+                            : 'Version $version · $variant',
+                      );
                     },
                   ),
                   trailing: _trailingIcon,

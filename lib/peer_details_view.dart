@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models/ipn.dart';
 import 'ping_view.dart';
 import 'providers/ipn.dart';
+import 'utils/distribution.dart';
 import 'utils/utils.dart';
 import 'viewmodels/peer_details.dart';
 import 'viewmodels/state_notifier.dart';
@@ -159,9 +160,35 @@ class _PeerDetailsViewState extends ConsumerState<PeerDetailsView> {
   }
 
   Map<String, String> _getInfos(Node node) {
-    final os = node.hostinfo?.os;
+    final hostinfo = node.hostinfo;
+    final os = hostinfo?.os;
     final m = <String, String>{};
     if (os != null) m["os"] = os;
+    final osVersion = hostinfo?.osVersion;
+    if (osVersion != null && osVersion.isNotEmpty) {
+      m['OS version'] = osVersion;
+    }
+    final distro = hostinfo?.distro;
+    if (distro != null && distro.isNotEmpty) {
+      final distroVersion = hostinfo?.distroVersion ?? '';
+      m['Distro'] = distroVersion.isEmpty ? distro : '$distro $distroVersion';
+    }
+    final deviceModel = hostinfo?.deviceModel;
+    if (deviceModel != null && deviceModel.isNotEmpty) {
+      m['Device model'] = deviceModel;
+    }
+    final package = hostinfo?.package;
+    if (package != null && package.isNotEmpty) {
+      m['App package'] = hostinfoPackageLabel(package);
+    }
+    final app = hostinfo?.app;
+    if (app != null && app.isNotEmpty) {
+      m['App version'] = hostinfoAppLabel(app);
+    }
+    final ipnVersion = hostinfo?.ipnVersion;
+    if (ipnVersion != null && ipnVersion.isNotEmpty) {
+      m['Client version'] = ipnVersion;
+    }
     m["Key expiry"] = node.keyDoesNotExpire
         ? "Key does not expire"
         : GoTimeUtil.keyExpiryFromGoTime(node.keyExpiry);
@@ -212,6 +239,12 @@ class _PeerDetailsViewState extends ConsumerState<PeerDetailsView> {
     return AdaptiveListTile(
       leading: switch (label) {
         'os' => const Icon(CupertinoIcons.device_desktop),
+        'OS version' => const Icon(CupertinoIcons.gear_alt),
+        'Distro' => const Icon(CupertinoIcons.desktopcomputer),
+        'Device model' => const Icon(CupertinoIcons.device_phone_portrait),
+        'App package' => const Icon(CupertinoIcons.cube_box),
+        'App version' => const Icon(CupertinoIcons.app_badge),
+        'Client version' => const Icon(CupertinoIcons.tag),
         'Key expiry' => const Icon(CupertinoIcons.clock),
         'Key base64' => const Icon(Icons.key_outlined),
         'Jailed' => const Icon(

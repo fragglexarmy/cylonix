@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/exception.dart';
@@ -14,6 +15,7 @@ import '../models/ipn.dart';
 import '../services/ipn.dart';
 import '../services/mdm.dart';
 import '../services/system_tray_service.dart';
+import '../utils/distribution.dart';
 import '../utils/logger.dart';
 import '../utils/utils.dart';
 import '../providers/ipn.dart';
@@ -92,9 +94,31 @@ class IpnStateNotifier extends StateNotifier<AsyncValue<IpnState>> {
         _processNextNotification();
       });
       await _ipnService.initializeEngine(_onError);
+      unawaited(_logAppBuildInfo());
       await _syncStateFromBackendStatus();
     } catch (error, stack) {
       _onError(error, stack);
+    }
+  }
+
+  /// Ships one line with the app version and install source to the daemon
+  /// log (and hence the uploaded log stream) so support can tell from a
+  /// log what build a user is running, and reports the same build string
+  /// to the daemon for Hostinfo.App so the control server sees it too.
+  /// Sent after the engine is up so both paths to the daemon exist.
+  Future<void> _logAppBuildInfo() async {
+    final PackageInfo info;
+    try {
+      info = await PackageInfo.fromPlatform();
+    } catch (e) {
+      _logger.w("Failed to read package info for build log: $e");
+      return;
+    }
+    _logger.i(appVersionLogLine(info));
+    try {
+      await _ipnService.setAppInfo(appHostinfoValue(info));
+    } catch (e) {
+      _logger.w("Failed to report app info to daemon: $e");
     }
   }
 

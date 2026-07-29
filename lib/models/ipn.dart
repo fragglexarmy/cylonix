@@ -901,6 +901,7 @@ class Hostinfo with _$Hostinfo {
     @JsonKey(name: 'DistroVersion') String? distroVersion,
     @JsonKey(name: 'DistroCodeName') String? distroCodeName,
     @JsonKey(name: 'Desktop') bool? desktop,
+    @JsonKey(name: 'App') String? app,
     @JsonKey(name: 'Package') String? package,
     @JsonKey(name: 'DeviceModel') String? deviceModel,
     @JsonKey(name: 'ShareeNode') bool? shareeNode,
