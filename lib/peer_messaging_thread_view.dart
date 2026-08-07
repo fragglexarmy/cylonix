@@ -1604,6 +1604,23 @@ class _PeerMessagingThreadViewState
     // not blank out an open thread the user is reading.
     if (liveConversation != null) {
       _lastSeenConversation = liveConversation;
+      // Clear the unread badge whenever this thread is showing, including
+      // messages that arrive while it is already open (e.g. as the selected
+      // thread in the split view, where initState/didUpdateWidget won't fire
+      // again). TickerMode is false while this route is covered by an opaque
+      // route (the Overlay disables it for hidden entries), so a rebuild of a
+      // backgrounded thread does not mark messages read; reading it here also
+      // subscribes us to visibility changes, so the badge clears once the
+      // covering route pops.
+      if (liveConversation.unreadCount > 0 &&
+          TickerMode.valuesOf(context).enabled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref
+              .read(peerMessagingServiceProvider.notifier)
+              .markConversationRead(widget.conversationId);
+        });
+      }
     }
     final conversation = liveConversation ?? _lastSeenConversation;
     if (conversation == null) {

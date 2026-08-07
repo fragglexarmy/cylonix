@@ -47,6 +47,11 @@ class _PeerMessagingInboxViewState
   }
 
   void _selectConversation(String conversationId) {
+    // Mark read here as well: re-selecting the already-open thread doesn't
+    // remount the thread view, so its initState/didUpdateWidget won't fire.
+    ref
+        .read(peerMessagingServiceProvider.notifier)
+        .markConversationRead(conversationId);
     setState(() {
       _selectedConversationId = conversationId;
     });
